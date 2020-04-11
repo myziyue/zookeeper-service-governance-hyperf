@@ -194,6 +194,8 @@ abstract class AbstractServiceClient
 
         // Current $consumer is the config of the specified consumer.
         if (isset($consumer['registry']['protocol'], $consumer['registry']['address'])) {
+            // set protocol
+            $this->protocol = $consumer['protocol'];
             // According to the protocol and address of the registry, retrieve the nodes.
             switch ($registryProtocol = $consumer['registry']['protocol'] ?? '') {
                 case 'consul':
@@ -240,20 +242,22 @@ abstract class AbstractServiceClient
         $services = $health->service($this->serviceName)->json();
         $nodes = [];
         foreach ($services as $node) {
+            $passing = false;
             $service = $node['Service'] ?? [];
             $checks = $node['Checks'] ?? [];
-            if($service['Meta']['Protocol'] != $this->protocol){
-                continue;
-            }
 
             foreach ($checks as $check) {
                 $status = $check['Status'] ?? false;
-                if ($status == 'passing') {
-                    $address = $service['Address'] ?? '';
-                    $port = (int) $service['Port'] ?? 0;
-                    // @TODO Get and set the weight property.
-                    $address && $port && $nodes[] = new Node($address, $port);
+                if ($status === 'passing' && $this->protocol === $service['Meta']['Protocol']) {
+                    $passing = true;
                 }
+            }
+
+            if ($passing) {
+                $address = $service['Address'] ?? '';
+                $port = (int) $service['Port'] ?? 0;
+                // @TODO Get and set the weight property.
+                $address && $port && $nodes[] = new Node($address, $port);
             }
         }
         return $nodes;
@@ -282,21 +286,22 @@ abstract class AbstractServiceClient
             return $nodes;
         }
         foreach ($services as $node) {
+            $passing = false;
             $service = $node['Service'] ?? [];
             $checks = $node['Checks'] ?? [];
 
-            if($service['Meta']['Protocol'] != $this->protocol){
-                continue;
-            }
-
             foreach ($checks as $check) {
                 $status = $check['Status'] ?? false;
-                if ($status == 'passing') {
-                    $address = $service['Address'] ?? '';
-                    $port = (int) $service['Port'] ?? 0;
-                    // @TODO Get and set the weight property.
-                    $address && $port && $nodes[] = new Node($address, $port);
+                if ($status === 'passing' && $this->protocol === $service['Meta']['Protocol']) {
+                    $passing = true;
                 }
+            }
+
+            if ($passing) {
+                $address = $service['Address'] ?? '';
+                $port = (int) $service['Port'] ?? 0;
+                // @TODO Get and set the weight property.
+                $address && $port && $nodes[] = new Node($address, $port);
             }
         }
         return $nodes;
