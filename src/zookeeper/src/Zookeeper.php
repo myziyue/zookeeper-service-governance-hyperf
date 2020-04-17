@@ -42,9 +42,15 @@ class Zookeeper extends BaseConnection implements ConnectionInterface
      * @var array
      */
     protected $config = [
-        'host' => '127.0.0.1:2181',
+        'server' => '127.0.0.1:2181',
+        'path' => '/hyperf-services',
         'timeout' => 1000,
     ];
+
+    /**
+     * @var ZookeeperResponse
+     */
+    private $zookeeperResponse;
 
     /**
      * @var null
@@ -60,6 +66,7 @@ class Zookeeper extends BaseConnection implements ConnectionInterface
         parent::__construct($container, $pool);
         $this->config = array_replace($this->config, $config);
         $this->logger = $container->get(StdoutLoggerInterface::class);
+        $this->zookeeperResponse = $container->get(ZookeeperResponse::class);
 
         $this->reconnect();
     }
@@ -81,14 +88,14 @@ class Zookeeper extends BaseConnection implements ConnectionInterface
 
     public function reconnect(): bool
     {
-        $this->zkHosts = $this->config['host'];
+        $this->zkHosts = $this->config['server'];
         $zkScheme = $this->config['scheme'];
         $zkCert = $this->config['cert'];
         $timeout = $this->config['timeout'];
 
         try {
-            $zookeeper = new SwZookeeper($this->zkHosts, [$this, "connectCallBack"], $timeout);
-            SwZookeeper::setDebugLevel(SwZookeeper::LOG_LEVEL_ERROR);
+            $zookeeper = new SwZookeeper($this->zkHosts, $timeout);
+            SwZookeeper::setDebugLevel(1);
         } catch (SwZookeeperException $ex) {
             throw new ConnectionException("Connection reconnect failed : {$ex->getMessage()} | {$this->zkHosts}");
         }
@@ -101,24 +108,6 @@ class Zookeeper extends BaseConnection implements ConnectionInterface
         $this->lastUseTime = microtime(true);
 
         return true;
-    }
-
-    /**
-     * Establish callback processing
-     *
-     * @param $type
-     * @param $event
-     * @param $string
-     */
-    public function connectCallBack(int $type, string $event, string $str): void
-    {
-        $this->logger->debug("Connect state: {$event} | {$this->zkHosts}");
-        $options = [$type, $event, $str];
-        if (isset($this->connectCallBackFunc)) {
-            $this->logger->debug("Callback connect state. | {$this->zkHosts}");
-            call_user_func($this->connectCallBackFunc, $options);
-        }
-        $this->logger->debug("Connect callback end. | {$this->zkHosts}");
     }
 
     public function close(): bool
@@ -314,13 +303,28 @@ class Zookeeper extends BaseConnection implements ConnectionInterface
         $subPath = "";
         while (count($parts) > 1) {
             $subPath .= '/' . array_shift($parts);
-            if (!$this->getClientFactory()->exists($subPath)) {
-                $this->getClientFactory()->create($subPath);
+            if (!$this->connection->exists($subPath)) {
+                $this->connection->create($subPath);
             }
         }
 
-        if (!$this->getClientFactory()->exists($path)) {
-            $this->getClientFactory()->create($path, $value);
+        if (!$this->connection->exists($path)) {
+            $this->connection->create($path, $value);
         }
+    }
+
+    public function getClientFactory()
+    {
+        return $this->connection;
+    }
+
+    public function getPath()
+    {
+        return $this->config['path'];
+    }
+
+    public function getResponse()
+    {
+        return $this->zookeeperResponse;
     }
 }

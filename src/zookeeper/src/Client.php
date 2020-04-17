@@ -26,16 +26,6 @@ class Client
      */
     protected $poolName = 'default';
 
-    /**
-     * @var string
-     */
-    private $defaultPath = '/hyperf-services';
-
-    /**
-     * @var ZookeeperResponse
-     */
-    private $zookeeperResponse;
-
     public function __construct(PoolFactory $factory)
     {
         $this->factory = $factory;
@@ -85,24 +75,5 @@ class Client
     private function getContextKey(): string
     {
         return sprintf('zookeeper.connection.%s', $this->poolName);
-    }
-
-
-
-    public function getClientFactory()
-    {
-        // Get a connection from coroutine context or connection pool.
-        $hasContextConnection = Context::has($this->getContextKey());
-        return $this->getConnection($hasContextConnection);
-    }
-
-    public function getPath()
-    {
-        return $this->defaultPath;
-    }
-
-    public function getResponse()
-    {
-        return $this->zookeeperResponse;
     }
 }
