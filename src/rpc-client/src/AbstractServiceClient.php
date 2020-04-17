@@ -242,22 +242,17 @@ abstract class AbstractServiceClient
         $services = $health->service($this->serviceName)->json();
         $nodes = [];
         foreach ($services as $node) {
-            $passing = false;
             $service = $node['Service'] ?? [];
             $checks = $node['Checks'] ?? [];
 
             foreach ($checks as $check) {
                 $status = $check['Status'] ?? false;
                 if ($status === 'passing' && $this->protocol === $service['Meta']['Protocol']) {
-                    $passing = true;
+                    $address = $service['Address'] ?? '';
+                    $port = (int) $service['Port'] ?? 0;
+                    // @TODO Get and set the weight property.
+                    $address && $port && $nodes[] = new Node($address, $port);
                 }
-            }
-
-            if ($passing) {
-                $address = $service['Address'] ?? '';
-                $port = (int) $service['Port'] ?? 0;
-                // @TODO Get and set the weight property.
-                $address && $port && $nodes[] = new Node($address, $port);
             }
         }
         return $nodes;
@@ -286,22 +281,17 @@ abstract class AbstractServiceClient
             return $nodes;
         }
         foreach ($services as $node) {
-            $passing = false;
             $service = $node['Service'] ?? [];
             $checks = $node['Checks'] ?? [];
 
             foreach ($checks as $check) {
                 $status = $check['Status'] ?? false;
                 if ($status === 'passing' && $this->protocol === $service['Meta']['Protocol']) {
-                    $passing = true;
+                    $address = $service['Address'] ?? '';
+                    $port = (int) $service['Port'] ?? 0;
+                    // @TODO Get and set the weight property.
+                    $address && $port && $nodes[] = new Node($address, $port);
                 }
-            }
-
-            if ($passing) {
-                $address = $service['Address'] ?? '';
-                $port = (int) $service['Port'] ?? 0;
-                // @TODO Get and set the weight property.
-                $address && $port && $nodes[] = new Node($address, $port);
             }
         }
         return $nodes;

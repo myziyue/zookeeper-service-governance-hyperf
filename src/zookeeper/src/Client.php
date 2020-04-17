@@ -2,77 +2,98 @@
 
 declare(strict_types=1);
 /**
- * This file is part of Hyperf.
+ * This file is part of Yunhu.
  *
- * @link     https://www.hyperf.io
- * @document https://doc.hyperf.io
- * @contact  group@hyperf.io
- * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ * @link     https://www.yunhuyj.com/
+ * @contact  zhiming.bi@yunhuyj.com
+ * @license  http://license.coscl.org.cn/MulanPSL/
  */
 
 namespace Hyperf\Zookeeper;
 
-use Hyperf\Contract\ConfigInterface;
-use Hyperf\Zookeeper\Exception\ClientException;
-use Hyperf\Contract\StdoutLoggerInterface;
-use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
+use Hyperf\Zookeeper\Pool\PoolFactory;
+use Hyperf\Utils\Context;
 
-abstract class Client
+class Client
 {
+    /**
+     * @var PoolFactory
+     */
+    protected $factory;
+
     /**
      * @var string
      */
-    private $defaultServer = '127.0.0.1:2181';
+    protected $poolName = 'default';
+
     /**
      * @var string
      */
     private $defaultPath = '/hyperf-services';
 
     /**
-     * @var \Swoole\Zookeeper
-     */
-    private $clientFactory;
-
-    /**
-     * @var StdoutLoggerInterface
-     */
-    protected $logger;
-    /**
      * @var ZookeeperResponse
      */
     private $zookeeperResponse;
 
-    /**
-     * @var array
-     */
-    public $defaultLoggerContext = [
-        'component' => 'zookeeper',
-    ];
-
-    public function __construct(ContainerInterface $container, LoggerInterface $logger = null)
+    public function __construct(PoolFactory $factory)
     {
-        $this->config = $container->get(ConfigInterface::class);
-        $this->logger = $logger ?: new NullLogger();
-        $this->zookeeperResponse = $container->get(ZookeeperResponse::class);
-        try {
-            $this->clientFactory = new \Swoole\Zookeeper($this->config->get('zookeeper.server', $this->defaultServer), 2.5);
-            \Swoole\Zookeeper::setDebugLevel(1);
-            $this->defaultPath = $this->config->get('zookeeper.path', $this->defaultPath);
-        } catch (ClientException $exception) {
-            $this->logger->error(sprintf('Zookeeper connect error: %s (%s).', $exception->getMessage(), $exception->getCode()), $this->defaultLoggerContext);
-        }
+        $this->factory = $factory;
     }
 
     public function __call($name, $arguments)
     {
-        return $this->clientFactory->{$name}(...$arguments);
+        // Get a connection from coroutine context or connection pool.
+        $hasContextConnection = Context::has($this->getContextKey());
+        $connection = $this->getConnection($hasContextConnection);
+
+        try {
+            // Execute the command with the arguments.
+            $result = $connection->{$name}(...$arguments);
+        } finally {
+            // Release connection.
+            if (!$hasContextConnection) {
+                // Release the connection after command executed.
+                $connection->release();
+            }
+        }
+
+        return $result;
     }
+
+
+    /**
+     * Get a connection from coroutine context, or from redis connectio pool.
+     * @param mixed $hasContextConnection
+     */
+    private function getConnection($hasContextConnection): Zookeeper
+    {
+        $connection = null;
+        if ($hasContextConnection) {
+            $connection = Context::get($this->getContextKey());
+        }
+        if (!$connection instanceof Zookeeper) {
+            $pool = $this->factory->getPool($this->poolName);
+            $connection = $pool->get()->getConnection();
+        }
+        return $connection;
+    }
+
+    /**
+     * The key to identify the connection object in coroutine context.
+     */
+    private function getContextKey(): string
+    {
+        return sprintf('zookeeper.connection.%s', $this->poolName);
+    }
+
+
 
     public function getClientFactory()
     {
-        return $this->clientFactory;
+        // Get a connection from coroutine context or connection pool.
+        $hasContextConnection = Context::has($this->getContextKey());
+        return $this->getConnection($hasContextConnection);
     }
 
     public function getPath()
@@ -83,22 +104,5 @@ abstract class Client
     public function getResponse()
     {
         return $this->zookeeperResponse;
-    }
-
-    public function createPath(string $path, string $value = '')
-    {
-        $parts = explode("/", $path);
-        $parts = array_filter($parts);
-        $subPath = "";
-        while (count($parts) > 1) {
-            $subPath .= '/' . array_shift($parts);
-            if (!$this->getClientFactory()->exists($subPath)) {
-                $this->getClientFactory()->create($subPath);
-            }
-        }
-
-        if (!$this->getClientFactory()->exists($path)) {
-            $this->getClientFactory()->create($path, $value);
-        }
     }
 }

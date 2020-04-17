@@ -31,6 +31,6 @@ class ZookeeperAgentFactory
 
     public function __invoke(ContainerInterface $container)
     {
-        return new Agent($container);
+        return  $container->get(Agent::class);
     }
 }
