@@ -1,13 +1,14 @@
-# Hyperf 官方基础框架优化库
+# 基于Zookeeper驱动的Hyperf服务注册组件(改进版)
 
 ## 组件库说明
 
 ### 1、官方组件库
 
-- [rpc-client](./src/rpc-client/) ： 官方RPC客户端组件库
+
+- [rpc-client](./src/rpc-client/) ： 官方RPC客户端组件库（来源于Hyperf官方组件）
     - 新增：支持Zookeeper(2020.04.08)
 
-- [service-governance](./src/service-governance/) ： 官方服务治理
+- [service-governance](./src/service-governance/) ： 官方服务治理（来源于Hyperf官方组件） 
     - 新增： 支持zookeeper(2020.04.08)
     - 修复： 同一个服务不同协议获取混乱的问题(2020.04.08)
 
@@ -51,3 +52,5 @@
 ```
 # composer update
 ```
+
+
