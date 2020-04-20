@@ -23,9 +23,12 @@ class Health extends Client implements HealthInterface
         $servicesPath = $this->getPath();
         if ($this->getClientFactory()->exists($servicesPath)) {
             foreach ($this->getChildren($servicesPath) as $childrenPath) {
+                if (strpos($childrenPath, $serviceName) === false) {
+                    continue;
+                }
                 $data = $this->getClientFactory()->get($this->getPath() . '/' . $childrenPath);
                 if (!$data) {
-                    break;
+                    continue;
                 }
                 $service = json_decode($data, true);
                 if (isset($service['Name']) && $serviceName == $service['Name']) {
@@ -39,6 +42,7 @@ class Health extends Client implements HealthInterface
             }
             $this->getResponse()->setBody(json_encode($services));
             $this->getResponse()->setStatusCode(200);
+
         }
         return $this->getResponse();
     }
