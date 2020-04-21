@@ -4,10 +4,10 @@ declare(strict_types=1);
 /**
  * This file is part of Hyperf.
  *
- * @link     https://www.hyperf.io
- * @document https://doc.hyperf.io
- * @contact  group@hyperf.io
- * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ * @link     https://www.myziyue.com
+ * @document https://doc.myziyue.com
+ * @contact  group@myziyue.com
+ * @license  https://github.com/myziyue/zookeeper-service-governance-hyperf/blob/master/LICENSE
  */
 
 return [
