@@ -11,13 +11,15 @@
     ],
     "homepage": "https://myziyue.com",
     "support": {
-        "docs": "https://hyperf.wiki",
-        "issues": "https://github.com/hyperf/hyperf/issues",
-        "pull-request": "https://github.com/hyperf/hyperf/pulls",
-        "source": "https://github.com/hyperf/hyperf"
+        "docs": "https://docs.myziyue.com",
+        "issues": "https://github.com/myziyue/zookeeper-service-governance-hyperf/issues",
+        "pull-request": "https://github.com/myziyue/zookeeper-service-governance-hyperf/pulls",
+        "source": "https://github.com/myziyue/zookeeper-service-governance-hyperf"
     },
     "require": {
         "php": ">=7.2",
+        "ext-json": "*",
+        "ext-swoole": ">=4.4",
         "ext-swoole_zookeeper": "*"
     },
     "require-dev": {
